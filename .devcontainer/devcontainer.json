@@ -1,0 +1,29 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/sarisia/mikanos-devcontainer
+{
+    "name": "MikanOS",
+    "build": {
+        "dockerfile": "Dockerfile",
+        // Choose variant: latest, vnc
+        // Set `vnc` to spin up noVNC services. Useful in GitHub Codespaces.
+        "args": {
+            "VARIANT": "latest"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            // Add the IDs of extensions you want installed when the container is created.
+            "extensions": [
+                "ms-vscode.cpptools"
+            ],
+        }
+    },
+    "remoteUser": "vscode",
+    "runArgs": [
+        "--privileged",
+        "--disable-content-trust=true"
+    ]
+}
