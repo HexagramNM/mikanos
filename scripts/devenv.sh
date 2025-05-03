@@ -1,7 +1,7 @@
 # Usage: source devenv.sh
 
 export PATH=$PATH:$HOME/osbook/devenv
-export MIKANOS_ROOT=$(cd $(dirname $0); cd ..; pwd)
+export MIKANOS_ROOT=$(cd $(dirname ${BASH_SOURCE:-$0}); cd ..; pwd)
 
 source $HOME/osbook/devenv/buildenv.sh
 
