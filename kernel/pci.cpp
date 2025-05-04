@@ -165,13 +165,13 @@ namespace pci
     {
         num_device = 0;
 
-        // auto header_type = ReadHeaderType(0, 0, 0);
-        // if (IsSingleFunctionDevice(header_type))
-        // {
-        //     return ScanBus(0);
-        // }
+        auto header_type = ReadHeaderType(0, 0, 0);
+        if (IsSingleFunctionDevice(header_type))
+        {
+            return ScanBus(0);
+        }
 
-        for (uint8_t function = 1; function < 8; ++function)
+        for (uint8_t function = 0; function < 8; ++function)
         {
             if (ReadVendorId(0, 0, function) == 0xffffu)
             {
