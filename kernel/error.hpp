@@ -11,7 +11,6 @@ public:
         kSuccess,
         kFull,
         kEmpty,
-        kLastOfCode,
         kNoEnoughMemory,
         kIndexOutOfRange,
         kHostControllerNotHalted,
