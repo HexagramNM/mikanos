@@ -33,6 +33,9 @@ kernel.elf: $(OBJS) Makefile
 	$(eval OBJ = $(<:.c=.o))
 	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
 
+%.o: %.asm Makefile
+	nasm -f elf64 -o $@ $<
+
 hankaku.bin: hankaku.txt
 	../tools/makefont.py -o $@ $<
 
