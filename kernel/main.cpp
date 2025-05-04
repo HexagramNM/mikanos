@@ -120,19 +120,6 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config)
         }
     }
 
-    for (int x = 0; x < frame_buffer_config.horizontal_resolution; ++x)
-    {
-        for (int y = 0; y < frame_buffer_config.vertical_resolution; ++y)
-        {
-            pixel_writer->Write(x, y, {255, 255, 255});
-        }
-    }
-
-    for (int i = 0; i < 27; ++i)
-    {
-        printk("printk: %d\n", i);
-    }
-
     while (1)
         __asm__("hlt");
 }
