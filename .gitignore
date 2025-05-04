@@ -2,6 +2,7 @@
 *.d
 *.elf
 *.img
+*.swp
 mnt
 
 hankaku.bin
