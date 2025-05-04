@@ -14,4 +14,4 @@ alias os-all-build="cd $MIKANOS_ROOT/kernel; make; cd $HOME/edk2; source edksetu
 alias os-all-build-b="cd $MIKANOS_ROOT/kernel; make -B; cd $HOME/edk2; source edksetup.sh; build;"
 alias run-qemu="cd $HOME/edk2; $HOME/osbook/devenv/run_qemu.sh $HOME/edk2/Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi $MIKANOS_ROOT/kernel/kernel.elf"
 
-alias reload-devenv="source $MIKANOS_ROOT/scripts/devenv.sh"
+alias reload-devenv="source $MIKANOS_ROOT/tools/devenv.sh"
