@@ -95,10 +95,14 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
     main_queue->Push(Message{Message::kInterruptXHCI});
     NotifyEndOfInterrupt();
 }
+alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
-extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config,
-                           const MemoryMap &memory_map)
+extern "C" void KernelMainNewStack(
+    const FrameBufferConfig &frame_buffer_config_ref,
+    const MemoryMap &memory_map_ref)
 {
+    FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
+    MemoryMap memory_map{memory_map_ref};
     switch (frame_buffer_config.pixel_format)
     {
     case kPixelRGBResv8BitPerColor:
