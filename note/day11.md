@@ -1,0 +1,14 @@
+- EFI System Table
+    - https://dox.ipxe.org/structEFI__SYSTEM__TABLE.html
+    - EFI System Table は EFI Configuration Table のリスト
+        - Confirmation Table は Vendor GUID と Vendor Table のタプル
+    - UEFI Application (つまりブートローダ) のエントリポイントで、第2引数に受け取れる
+    - この中に RSDP という ACPI にまつわるなんやかんやが格納された Vendor Table が含まれている
+        - ACPI: Advanced Configuration and Power Interface
+        - https://ja.wikipedia.org/wiki/Advanced_Configuration_and_Power_Interface
+- RSDP: Root System Descriptor Table (ACPI Table)
+    - https://wiki.osdev.org/RSDP
+    - 11章で kernel に渡しているのはこれ
+- XSDT: Extended System Descriptor Table
+- FADT: Fixed ACPI Description Table
+    - https://wiki.osdev.org/FADT
