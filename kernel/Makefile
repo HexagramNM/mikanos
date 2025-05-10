@@ -25,7 +25,7 @@ kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc -lc++ -lc++abi
 
 main.o: main.cpp Makefile
-	clang++ $(CPPFLAGS) $(CXXFLAGS) -DMIKANOS_VERSION="\"$(shell git rev-parse --short HEAD)\"" -c $< -o $@
+	clang++ $(CPPFLAGS) $(CXXFLAGS) -DMIKANOS_VERSION="\"$(shell git log -1 --pretty=%B | head -n 1)\"" -c $< -o $@
 
 %.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
