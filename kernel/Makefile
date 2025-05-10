@@ -24,7 +24,7 @@ clean:
 kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc -lc++ -lc++abi
 
-main.o: main.cpp Makefile
+main.o: main.cpp ../.git/COMMIT_EDITMSG Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -DMIKANOS_VERSION="\"$(shell git log -1 --pretty=%B | head -n 1)\"" -c $< -o $@
 
 %.o: %.cpp Makefile
