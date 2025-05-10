@@ -104,7 +104,7 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
         mouse_drag_layer_id = 0;
     }
 
-    layer_manager->Move(mouse_layer_id, mouse_position);
+    previous_buttons = buttons;
 }
 
 void SwitchEhci2Xhci(const pci::Device &xhc_dev)
