@@ -72,7 +72,6 @@ void LayerManager::SetWriter(FrameBuffer *screen)
 Layer &LayerManager::NewLayer()
 {
     ++latest_id_;
-    Log(kInfo, "new layer id: %d\n", latest_id_);
     return *layers_.emplace_back(new Layer{latest_id_});
 }
 
@@ -129,7 +128,6 @@ void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff)
 
 void LayerManager::UpDown(unsigned int id, int new_height)
 {
-    Log(kInfo, "updown %d, %d\n", id, new_height);
     if (new_height < 0)
     {
         Hide(id);
