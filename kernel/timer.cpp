@@ -87,7 +87,7 @@ bool TimerManager::Tick()
         Message m{Message::kTimerTimeout};
         m.arg.timer.timeout = t.Timeout();
         m.arg.timer.value = t.Value();
-        msg_queue_.push_back(m);
+        task_manager->SendMessage(1, m);
 
         timers_.pop();
     }
