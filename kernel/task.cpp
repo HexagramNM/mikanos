@@ -7,7 +7,7 @@
 #include "segment.hpp"
 #include "timer.hpp"
 
-Task::Task(uint64_t id) : id_{id}
+Task::Task(uint64_t id) : id_{id}, msgs_{}
 {
 }
 
