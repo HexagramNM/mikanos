@@ -5,6 +5,7 @@
 #include "graphics.hpp"
 #include "layer.hpp"
 #include "usb/classdriver/mouse.hpp"
+#include "logger.hpp"
 
 namespace
 {

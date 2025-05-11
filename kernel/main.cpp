@@ -72,7 +72,6 @@ void InitializeTextWindow()
 
     text_window = std::make_shared<ToplevelWindow>(
         win_w, win_h, screen_config.pixel_format, "Text Box Test");
-    DrawWindow(*text_window->Writer(), "Text Box Test");
     DrawTextbox(*text_window->InnerWriter(), {0, 0}, text_window->InnerSize());
 
     text_window_layer_id = layer_manager->NewLayer()
@@ -134,6 +133,7 @@ void InitializeTaskBWindow()
                                  .SetDraggable(true)
                                  .Move({100, 100})
                                  .ID();
+    Log(kInfo, "issued task b window\n");
 
     layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
@@ -193,7 +193,7 @@ extern "C" void KernelMainNewStack(
     InitializeGraphics(frame_buffer_config_ref);
     InitializeConsole();
 
-    SetLogLevel(kWarn);
+    SetLogLevel(kInfo);
 
     InitializeSegmentation();
     InitializePaging();
@@ -208,6 +208,7 @@ extern "C" void KernelMainNewStack(
     InitializeTextWindow();
     InitializeTaskBWindow();
     layer_manager->Draw({{0, 0}, ScreenSize()});
+    Log(kInfo, "activate: %d\n", task_b_window_layer_id);
     active_layer->Activate(task_b_window_layer_id);
 
     acpi::Initialize(acpi_table);
