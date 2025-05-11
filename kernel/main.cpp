@@ -183,16 +183,15 @@ extern "C" void KernelMainNewStack(
     InitializeInterrupt();
 
     InitializePCI();
-    usb::xhci::Initialize();
 
     InitializeLayer();
     InitializeMainWindow();
     InitializeTextWindow();
     InitializeTaskBWindow();
-    InitializeMouse();
     layer_manager->Draw({{0, 0}, ScreenSize()});
 
     acpi::Initialize(acpi_table);
+    InitializeLAPICTimer();
 
     const int kTextboxCursorTimer = 1;
     const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);

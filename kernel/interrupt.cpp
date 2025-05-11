@@ -27,7 +27,6 @@ void NotifyEndOfInterrupt()
 
 namespace
 {
-    std::deque<Message> *msg_queue;
 
     __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
     {
