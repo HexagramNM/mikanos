@@ -5,7 +5,96 @@
 #include "font.hpp"
 #include "layer.hpp"
 #include "pci.hpp"
-#include "fat.hpp"
+#include "asmfunc.h"
+#include "elf.h"
+
+namespace {
+
+std::vector<char*> MakeArgVector(char* command, char* first_arg) {
+    std::vector<char*> argv;
+    argv.push_back(command);
+    if (!first_arg) {
+        return argv;
+    }
+
+    char* p = first_arg;
+    while (true) {
+        while (isspace(p[0])) {
+            ++p;
+        }
+        if (p[0] == 0) {
+            break;
+        }
+        argv.push_back(p);
+
+        while (p[0] != 0 && !isspace(p[0])) {
+            ++p;
+        }
+        if (p[0] == 0) {
+            break;
+        }
+        p[0] = 0;
+        ++p;
+    }
+
+    return argv;
+}
+
+/*
+ちゃんとElfファイルのヘッダにあるようにLoadセグメントをメモリ上にコピーしないと
+アプリ実行時にセグフォで落ちたので、kernel実行と同様のコピー処理を追加
+（4.5節 「ローダを改良する」を参照）
+*/
+void CalcElfLoadAddressRange(Elf64_Ehdr* ehdr, uint64_t& first, uint64_t& last) {
+    Elf64_Phdr* phdr = reinterpret_cast<Elf64_Phdr*>((int64_t)ehdr + ehdr->e_phoff);
+    first = UINT64_MAX;
+    last = 0;
+
+    for (Elf64_Half i = 0; i < ehdr->e_phnum; i++) {
+        if (phdr[i].p_type != PT_LOAD) {
+            continue;
+        }
+
+        first = std::min(first, phdr[i].p_vaddr);
+        last = std::max(last, phdr[i].p_vaddr + phdr[i].p_memsz);
+    }
+}
+
+void CopyLoadSegments(Elf64_Ehdr* ehdr, std::vector<uint8_t>& elfMemBuf) {
+    Elf64_Phdr* phdr = reinterpret_cast<Elf64_Phdr*>((int64_t)ehdr + ehdr->e_phoff);
+    for (Elf64_Half i = 0; i < ehdr->e_phnum; i++) {
+        if (phdr[i].p_type != PT_LOAD) {
+            continue;
+        }
+
+        uint64_t segm_in_buf = (uint64_t)(&elfMemBuf[0]) + phdr[i].p_vaddr;
+        uint64_t segm_in_file = (uint64_t)ehdr + phdr[i].p_offset;
+        memcpy(reinterpret_cast<void*>(segm_in_buf), reinterpret_cast<void*>(segm_in_file), phdr[i].p_filesz);
+
+        uint64_t remain_bytes = phdr[i].p_memsz - phdr[i].p_filesz;
+        memset(reinterpret_cast<void*>(segm_in_buf + phdr[i].p_filesz), 0, remain_bytes);
+    }
+}
+
+int ExecuteElf(std::vector<uint8_t>& elfFileBuf, std::vector<char*>& argv) {
+    auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&elfFileBuf[0]);
+    uint64_t app_first_addr;
+    uint64_t app_last_addr;
+    CalcElfLoadAddressRange(elf_header, app_first_addr, app_last_addr);
+
+    std::vector<uint8_t> elf_mem_buf(static_cast<uint32_t>(app_last_addr));
+    CopyLoadSegments(elf_header, elf_mem_buf);
+
+    auto entry_addr = elf_header->e_entry;
+    entry_addr += reinterpret_cast<uintptr_t>(&elf_mem_buf[0]);
+    using Func = int (int, char**);
+    auto f = reinterpret_cast<Func*>(entry_addr);
+    return f(argv.size(), &argv[0]);
+}
+
+// 独自追加関数ここまで
+    
+} // namespace
 
 Terminal::Terminal() {
     window_ = std::make_shared<ToplevelWindow>(
@@ -136,8 +225,7 @@ void Terminal::ExecuteLine() {
         auto root_dir_entries = fat::GetSectorByCluster<fat::DirectoryEntry>(
             fat::boot_volume_image->root_cluster);
         auto entries_per_cluster =
-           fat::boot_volume_image->bytes_per_sector / sizeof(fat::DirectoryEntry)
-           * fat::boot_volume_image->sectors_per_cluster;
+           fat::bytes_per_cluster / sizeof(fat::DirectoryEntry);
         char base[9], ext[4];
         char s[64];
         for (int i = 0; i < entries_per_cluster; ++i) {
@@ -157,16 +245,77 @@ void Terminal::ExecuteLine() {
             }
             Print(s);
         }
+    } else if (strcmp(command, "cat") == 0) {
+        char s[64];
+    
+        auto file_entry = fat::FindFile(first_arg);
+        if (!file_entry) {
+            sprintf(s, "no such file: %s\n", first_arg);
+            Print(s);
+        } else {
+            auto cluster = file_entry->FirstCluster();
+            auto remain_bytes = file_entry->file_size;
+    
+            DrawCursor(false);
+            while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
+                char* p = fat::GetSectorByCluster<char>(cluster);
+    
+                int i = 0;
+                for (; i < fat::bytes_per_cluster && i < remain_bytes; ++i) {
+                    Print(*p);
+                    ++p;
+                }
+                remain_bytes -= i;
+                cluster = fat::NextCluster(cluster);
+            }
+            DrawCursor(true);
+        }
     } else if (command[0] != 0) {
-        Print("no such command: ");
-        Print(command);
-        Print("\n");
+        auto file_entry = fat::FindFile(command);
+        if (!file_entry) {
+            Print("no such command: ");
+            Print(command);
+            Print("\n");
+        } else {
+            ExecuteFile(*file_entry, command, first_arg);
+        }
     }
 }
 
-  void Terminal::Print(const char* s) {
-    DrawCursor(false);
+void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
+    auto cluster = file_entry.FirstCluster();
+    auto remain_bytes = file_entry.file_size;
   
+    std::vector<uint8_t> file_buf(remain_bytes);
+    auto p = &file_buf[0];
+  
+    while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
+        const auto copy_bytes = fat::bytes_per_cluster < remain_bytes ?
+            fat::bytes_per_cluster : remain_bytes;
+        memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), copy_bytes);
+  
+        remain_bytes -= copy_bytes;
+        p += copy_bytes;
+        cluster = fat::NextCluster(cluster);
+    }
+  
+    auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
+    if (memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
+        using Func = void ();
+        auto f = reinterpret_cast<Func*>(&file_buf[0]);
+        f();
+        return;
+    }
+
+    auto argv = MakeArgVector(command, first_arg);
+    int ret = ExecuteElf(file_buf, argv);
+
+    char s[64];
+    sprintf(s, "app exited. ret = %d\n", ret);
+    Print(s);
+}
+
+void Terminal::Print(char c) {
     auto newline = [this]() {
         cursor_.x = 0;
         if (cursor_.y < kRows - 1) {
@@ -176,21 +325,26 @@ void Terminal::ExecuteLine() {
         }
     };
   
-    while (*s) {
-        if (*s == '\n') {
+    if (c == '\n') {
+        newline();
+    } else {
+        WriteAscii(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+        if (cursor_.x == kColumns - 1) {
             newline();
         } else {
-            WriteAscii(*window_->Writer(), CalcCursorPos(), *s, {255, 255, 255});
-            if (cursor_.x == kColumns - 1) {
-                newline();
-            } else {
-                ++cursor_.x;
-            }
+            ++cursor_.x;
         }
-  
-      ++s;
     }
-  
+}
+
+void Terminal::Print(const char* s) {
+    DrawCursor(false);
+
+    while (*s) {
+        Print(*s);
+        ++s;
+    }
+
     DrawCursor(true);
 }
 
@@ -237,6 +391,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
             __asm__("sti");
             continue;
         }
+        __asm__("sti");
 
         switch (msg->type) {
         case Message::kTimerTimeout:
