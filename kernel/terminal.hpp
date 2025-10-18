@@ -7,7 +7,6 @@
 #pragma once
 
 #include <deque>
-#include <array>
 #include <map>
 #include "window.hpp"
 #include "task.hpp"
@@ -47,8 +46,6 @@ private:
     std::deque<std::array<char, kLineMax>> cmd_history_{};
     int cmd_history_index_{-1};
     Rectangle<int> HistoryUpDown(int direction);
-
-    alignas(4096) std::array<uint64_t, 512> pml4_table;
 };
  
 void TaskTerminal(uint64_t task_id, int64_t data);

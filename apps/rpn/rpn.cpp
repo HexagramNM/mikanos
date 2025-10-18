@@ -1,5 +1,5 @@
 #include <cstring>
-#include <cstdlib>
+//#include <cstdlib>
   
 int stack_ptr;
 long stack[100];
@@ -13,6 +13,16 @@ long Pop() {
 void Push(long value) {
     ++stack_ptr;
     stack[stack_ptr] = value;
+}
+
+// 標準関数のatolを使用するとクラッシュしてしまった。
+// 自作のatolを使うことに
+long atol(const char* s) {
+    long v = 0;
+    for (int i = 0; s[i] != 0; i++) {
+        v = v * 10 + (s[i] - '0');
+    }
+    return v;
 }
   
 extern "C" int main(int argc, char** argv) {

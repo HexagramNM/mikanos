@@ -201,61 +201,6 @@ Error CleanPageMaps(LinearAddress4Level addr) {
     const FrameID pdp_frame{pdp_addr / kBytesPerFrame};
     return memory_manager->Free(pdp_frame, 1);
 }
-
-/*
-ちゃんとElfファイルのヘッダにあるようにLoadセグメントをメモリ上にコピーしないと
-アプリ実行時にセグフォで落ちたので、kernel実行と同様のコピー処理を追加
-（4.5節 「ローダを改良する」を参照）
-*/
-/*
-void CalcElfLoadAddressRange(Elf64_Ehdr* ehdr, uint64_t& first, uint64_t& last) {
-    Elf64_Phdr* phdr = reinterpret_cast<Elf64_Phdr*>((int64_t)ehdr + ehdr->e_phoff);
-    first = UINT64_MAX;
-    last = 0;
-
-    for (Elf64_Half i = 0; i < ehdr->e_phnum; i++) {
-        if (phdr[i].p_type != PT_LOAD) {
-            continue;
-        }
-
-        first = std::min(first, phdr[i].p_vaddr);
-        last = std::max(last, phdr[i].p_vaddr + phdr[i].p_memsz);
-    }
-}
-
-void CopyLoadSegments(Elf64_Ehdr* ehdr, std::vector<uint8_t>& elfMemBuf) {
-    Elf64_Phdr* phdr = reinterpret_cast<Elf64_Phdr*>((int64_t)ehdr + ehdr->e_phoff);
-    for (Elf64_Half i = 0; i < ehdr->e_phnum; i++) {
-        if (phdr[i].p_type != PT_LOAD) {
-            continue;
-        }
-
-        uint64_t segm_in_buf = (uint64_t)(&elfMemBuf[0]) + phdr[i].p_vaddr;
-        uint64_t segm_in_file = (uint64_t)ehdr + phdr[i].p_offset;
-        memcpy(reinterpret_cast<void*>(segm_in_buf), reinterpret_cast<void*>(segm_in_file), phdr[i].p_filesz);
-
-        uint64_t remain_bytes = phdr[i].p_memsz - phdr[i].p_filesz;
-        memset(reinterpret_cast<void*>(segm_in_buf + phdr[i].p_filesz), 0, remain_bytes);
-    }
-}
-
-int ExecuteElf(std::vector<uint8_t>& elfFileBuf, std::vector<char*>& argv) {
-    auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&elfFileBuf[0]);
-    uint64_t app_first_addr;
-    uint64_t app_last_addr;
-    CalcElfLoadAddressRange(elf_header, app_first_addr, app_last_addr);
-
-    std::vector<uint8_t> elf_mem_buf(static_cast<uint32_t>(app_last_addr));
-    CopyLoadSegments(elf_header, elf_mem_buf);
-
-    auto entry_addr = elf_header->e_entry;
-    entry_addr += reinterpret_cast<uintptr_t>(&elf_mem_buf[0]);
-    using Func = int (int, char**);
-    auto f = reinterpret_cast<Func*>(entry_addr);
-    return f(argv.size(), &argv[0]);
-}*/
-
-// 独自追加関数ここまで
     
 } // namespace
 
