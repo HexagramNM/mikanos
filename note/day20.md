@@ -29,4 +29,6 @@ https://blog.rkarsnk.jp/post/2021/12/10/debugefiapp/
     - CallAppに渡す引数では正しいアドレスを渡せているように見える。
     - 問題として、while(1)で止まらず、更にRIPが進んでしまい、未定義の場所をアクセスしようとしてしまったり、
     入るはずのない分岐に入ってreturnしてしまったりしているようだった。
+    - この記事を見て`while(1);`を修正したら、想定した挙動になった。未定義動作になっていたっぽい...
+    https://qiita.com/tkmtSo/items/de3148dd1dcb70f38d6a
     

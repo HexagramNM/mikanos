@@ -14,16 +14,6 @@ void Push(long value) {
     ++stack_ptr;
     stack[stack_ptr] = value;
 }
-
-// 標準関数のatolを使用するとクラッシュしてしまった。
-// 自作のatolを使うことに
-/*long atol(const char* s) {
-    long v = 0;
-    for (int i = 0; s[i] != 0; i++) {
-        v = v * 10 + (s[i] - '0');
-    }
-    return v;
-}*/
   
 extern "C" int main(int argc, char** argv) {
     stack_ptr = -1;
@@ -43,11 +33,14 @@ extern "C" int main(int argc, char** argv) {
         }
     }
 
-    /*if (stack_ptr < 0) {
+    if (stack_ptr < 0) {
         return 0;
-    }*/
+    }
 
-    while(1);
+    volatile int temp = 0;
+    while(1) {
+        temp = 0;
+    }
     //return static_cast<int>(Pop());
 }
   

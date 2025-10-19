@@ -453,11 +453,6 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     }
 
     auto entry_addr = elf_header->e_entry;
-    char s[64];
-    sprintf(s, "rip = %lx", entry_addr);
-    WriteString(*screen_writer, {500, 16*7}, s, {0, 0, 0});
-    sprintf(s, "rsp = %lx", stack_frame_addr.value + 4096 - 8);
-    WriteString(*screen_writer, {500, 16*8}, s, {0, 0, 0});
     CallApp(argc.value, argv, 3 << 3 | 3, 4 << 3 | 3, entry_addr,
         stack_frame_addr.value + 4096 - 8);
 
