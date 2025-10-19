@@ -6,7 +6,6 @@
 #include <deque>
 #include <optional>
 #include <vector>
-#include <memory>
 
 #include "error.hpp"
 #include "message.hpp"
@@ -72,7 +71,7 @@ public:
 
     TaskManager();
     Task &NewTask();
-    void SwitchTask(bool current_sleep = false);
+    void SwitchTask(const TaskContext& current_ctx);
 
     void Sleep(Task *task);
     Error Sleep(uint64_t id);
@@ -89,6 +88,7 @@ private:
     bool level_changed_{false};
 
     void ChangeLevelRunning(Task *task, int level);
+    Task* RotateCurrentRunQueue(bool current_sleep);
 };
 
 extern TaskManager *task_manager;

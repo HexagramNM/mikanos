@@ -1,6 +1,3 @@
-#include <cstring>
-#include <algorithm>
-
 #include "task.hpp"
 
 #include "asmfunc.h"
@@ -93,14 +90,14 @@ std::optional<Message> Task::ReceiveMessage()
 TaskManager::TaskManager()
 {
     Task &task = NewTask()
-                     .SetLevel(current_level_)
-                     .SetRunning(true);
+        .SetLevel(current_level_)
+        .SetRunning(true);
     running_[current_level_].push_back(&task);
 
     Task &idle = NewTask()
-                     .InitContext(TaskIdle, 0)
-                     .SetLevel(0)
-                     .SetRunning(true);
+        .InitContext(TaskIdle, 0)
+        .SetLevel(0)
+        .SetRunning(true);
     running_[0].push_back(&idle);
 }
 
@@ -110,36 +107,13 @@ Task &TaskManager::NewTask()
     return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-void TaskManager::SwitchTask(bool current_sleep)
-{
-    auto &level_queue = running_[current_level_];
-    Task *current_task = level_queue.front();
-    level_queue.pop_front();
-    if (!current_sleep)
-    {
-        level_queue.push_back(current_task);
+void TaskManager::SwitchTask(const TaskContext& current_ctx) {
+    TaskContext& task_ctx = task_manager->CurrentTask().Context();
+    memcpy(&task_ctx, &current_ctx, sizeof(TaskContext));
+    Task* current_task = RotateCurrentRunQueue(false);
+    if (&CurrentTask() != current_task) {
+        RestoreContext(&CurrentTask().Context());
     }
-    if (level_queue.empty())
-    {
-        level_changed_ = true;
-    }
-
-    if (level_changed_)
-    {
-        level_changed_ = false;
-        for (int lv = kMaxLevel; lv >= 0; --lv)
-        {
-            if (!running_[lv].empty())
-            {
-                current_level_ = lv;
-                break;
-            }
-        }
-    }
-
-    Task *next_task = running_[current_level_].front();
-
-    SwitchContext(&next_task->Context(), &current_task->Context());
 }
 
 void TaskManager::Sleep(Task *task)
@@ -153,7 +127,8 @@ void TaskManager::Sleep(Task *task)
 
     if (task == running_[current_level_].front())
     {
-        SwitchTask(true);
+        Task* current_task = RotateCurrentRunQueue(true);
+        SwitchContext(&CurrentTask().Context(), &current_task->Context());
         return;
     }
 
@@ -264,6 +239,30 @@ void TaskManager::ChangeLevelRunning(Task *task, int level)
         current_level_ = level;
         level_changed_ = true;
     }
+}
+
+Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
+    auto& level_queue = running_[current_level_];
+    Task* current_task = level_queue.front();
+    level_queue.pop_front();
+    if (!current_sleep) {
+        level_queue.push_back(current_task);
+    }
+    if (level_queue.empty()) {
+        level_changed_ = true;
+    }
+  
+    if (level_changed_) {
+        level_changed_ = false;
+        for (int lv = kMaxLevel; lv >= 0; --lv) {
+            if (!running_[lv].empty()) {
+                current_level_ = lv;
+                break;
+            }
+        }
+    }
+  
+    return current_task;
 }
 
 TaskManager *task_manager;
