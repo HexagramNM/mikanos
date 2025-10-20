@@ -30,6 +30,7 @@
 #include "task.hpp"
 #include "terminal.hpp"
 #include "fat.hpp"
+#include "syscall.hpp"
 
 #ifndef MIKANOS_VERSION
 #define MIKANOS_VERSION "null"
@@ -162,6 +163,8 @@ extern "C" void KernelMainNewStack(
     timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
     __asm__("sti");
     bool textbox_cursor_visible = false;
+
+    InitializeSyscall();
 
     InitializeTask();
     Task &main_task = task_manager->CurrentTask();
