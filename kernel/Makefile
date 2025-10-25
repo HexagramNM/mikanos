@@ -23,7 +23,7 @@ clean:
 	rm -rf *.o
 
 kernel.elf: $(OBJS) Makefile
-	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc -lc++ -lc++abi
+	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc -lc++ -lc++abi -lm
 
 main.o: main.cpp ../.git/COMMIT_EDITMSG Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -DMIKANOS_VERSION="\"$(shell git log -1 --pretty=%B | head -n 1)\"" -c $< -o $@
