@@ -4,6 +4,7 @@
 *.img
 *.swp
 mnt
+*.un~
 
 hankaku.bin
 hankaku.o
