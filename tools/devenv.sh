@@ -3,6 +3,9 @@
 export PATH=$PATH:$HOME/osbook/devenv
 export MIKANOS_ROOT=$(cd $(dirname ${BASH_SOURCE:-$0}); cd ..; pwd)
 
+export APPS_DIR=apps
+export RESOURCE_DIR=resource
+
 source $HOME/osbook/devenv/buildenv.sh
 
 alias cd-devenv="cd $HOME/osbook/devenv"
