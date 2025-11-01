@@ -371,6 +371,7 @@ void Terminal::Scroll1() {
         window_->Move(ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4}, move_src);
         FillRectangle(*window_->InnerWriter(),
             {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
+        Redraw();
     }
 }
 
@@ -728,6 +729,50 @@ Rectangle<int> Terminal::HistoryUpDown(int direction) {
     return draw_area;
 }
 
+namespace {
+void TaskTerminalDisplay(uint64_t task_id, int64_t data) {
+    Terminal* terminal = reinterpret_cast<Terminal*>(data);
+    __asm__("cli");
+    Task& task = task_manager->CurrentTask();
+    __asm__("sti");
+
+    auto add_blink_timer = [task](unsigned long t) {
+        timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
+            1, task.ID()});
+    };
+    add_blink_timer(timer_manager->CurrentTick());
+
+    while (true) {
+        __asm__("cli");
+        auto msg = task.ReceiveMessage();
+        if (!msg) {
+            task.Sleep();
+            __asm__("sti");
+            continue;
+        }
+        __asm__("sti");
+
+        bool window_isactive = (terminal->LayerID() == active_layer->GetActive());
+        switch (msg->type) {
+        case Message::kTimerTimeout:
+            add_blink_timer(msg->arg.timer.timeout);
+            if (window_isactive) {
+                const auto area = terminal->BlinkCursor();
+                Message msg = MakeLayerMessage(
+                    terminal->UnderlyingTask().ID(), terminal->LayerID(),
+                    LayerOperation::DrawArea, area);
+                __asm__("cli");
+                task_manager->SendMessage(1, msg);
+                __asm__("sti");
+            }
+            break;
+        default:
+            break;
+        }
+    }
+}
+} // namespace
+
 void TaskTerminal(uint64_t task_id, int64_t data) {
     const auto term_desc = reinterpret_cast<TerminalDescriptor*>(data);
     bool show_window = true;
@@ -759,13 +804,11 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
     }
 
-    auto add_blink_timer = [task_id](unsigned long t) {
-        timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
-            1, task_id});
-    };
-    add_blink_timer(timer_manager->CurrentTick());
-
-    bool window_isactive = false;
+    if (show_window) {
+        task_manager->NewTask()
+            .InitContext(TaskTerminalDisplay, reinterpret_cast<int64_t>(terminal))
+            .Wakeup();
+    }
 
     while (true) {
         __asm__("cli");
@@ -778,17 +821,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
 
         switch (msg->type) {
-        case Message::kTimerTimeout:
-            add_blink_timer(msg->arg.timer.timeout);
-            if (show_window && window_isactive) {
-                const auto area = terminal->BlinkCursor();
-                Message msg = MakeLayerMessage(
-                    task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
-                __asm__("cli");
-                task_manager->SendMessage(1, msg);
-                __asm__("sti");
-            }
-            break;
         case Message::kKeyPush:
             if (msg->arg.keyboard.press) {
                 const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
@@ -802,9 +834,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
                     __asm__("sti");
                 }
             }
-            break;
-        case Message::kWindowActive:
-            window_isactive = msg->arg.window_active.activate;
             break;
         default:
             break;
