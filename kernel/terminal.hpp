@@ -15,7 +15,13 @@
 #include "fat.hpp"
 #include "asmfunc.h"
  
-// #@@range_begin(term)
+struct AppLoadInfo {
+    uint64_t vaddr_end, entry;
+    PageMapEntry* pml4;
+};
+
+extern std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
+
 class Terminal {
 public:
     static const int kRows = 15, kColumns = 60;

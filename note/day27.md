@@ -10,3 +10,7 @@
     https://mkguytone.github.io/allocator-navigatable/ch73.html
 
     - Windowsだとwindows.hにあるCreateFileMappingで作れるっぽい。結構Linuxと違い、OS依存な処理のように見える。
+
+- terminal.cppで使用しているCopyPageMapsでstartの引数を256としているのは、
+PML4の前半部分（OS側メモリ）はSetupPML4の時点で共通のメモリ設定が行われており、
+後半部分（アプリ側メモリ）のみをコピーしたいから。
