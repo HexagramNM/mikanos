@@ -120,7 +120,7 @@ public:
 
     virtual void Activate() override;
     virtual void Deactivate() override;
-    virtual WindowRegion GetWindowRegion(Vector2D<int> pos);
+    virtual WindowRegion GetWindowRegion(Vector2D<int> pos) override;
 
     InnerAreaWriter *InnerWriter() { return &inner_writer_; }
     Vector2D<int> InnerSize() const;

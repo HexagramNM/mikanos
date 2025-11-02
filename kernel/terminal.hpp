@@ -44,6 +44,7 @@ public:
     Task& UnderlyingTask() const { return task_; }
     int LastExitCode() const { return last_exit_code_; }
     void Redraw();
+    bool GetCanBlinkCursor() const { return can_blink_cursor_; }
  
 private:
     std::shared_ptr<ToplevelWindow> window_;
@@ -69,6 +70,7 @@ private:
     Rectangle<int> HistoryUpDown(int direction);
 
     bool show_window_;
+    bool can_blink_cursor_{true};
     std::array<std::shared_ptr<FileDescriptor>, 3> files_;
     int last_exit_code_{0};
 };

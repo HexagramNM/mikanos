@@ -305,6 +305,7 @@ Vector2D<int> Terminal::CalcCursorPos() const {
 Rectangle<int> Terminal::InputKey(
     uint8_t modifier, uint8_t keycode, char ascii) {
   
+    can_blink_cursor_ = false;
     DrawCursor(false);
 
     Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
@@ -324,7 +325,10 @@ Rectangle<int> Terminal::InputKey(
         } else {
             Scroll1();
         }
+        can_blink_cursor_ = true;
+        Redraw();
         ExecuteLine();
+        can_blink_cursor_ = false;
         Print(">");
         draw_area.pos = ToplevelWindow::kTopLeftMargin;
         if (show_window_) {
@@ -358,6 +362,7 @@ Rectangle<int> Terminal::InputKey(
     }
 
     DrawCursor(true);
+    can_blink_cursor_ = true;
 
     return draw_area;
 }
@@ -512,6 +517,7 @@ void Terminal::ExecuteLine() {
 
         if (fd) {
             char u8buf[1024];
+            can_blink_cursor_ = false;
             DrawCursor(false);
             while (true) {
                 if (ReadDelim(*fd, '\n', u8buf, sizeof(u8buf)) == 0) {
@@ -521,6 +527,7 @@ void Terminal::ExecuteLine() {
                 PrintToFD(*files_[1], "%s", u8buf);
             }
             DrawCursor(true);
+            can_blink_cursor_ = true;
         }
     } else if (strcmp(command, "noterm") == 0) {
         auto term_desc = new TerminalDescriptor {
@@ -659,6 +666,7 @@ void Terminal::Print(char32_t c) {
 
 void Terminal::Print(const char* s, std::optional<size_t> len) {
     const auto cursor_before = CalcCursorPos();
+    can_blink_cursor_ = false;
     DrawCursor(false);
 
     size_t i = 0;
@@ -670,6 +678,7 @@ void Terminal::Print(const char* s, std::optional<size_t> len) {
     }
 
     DrawCursor(true);
+    can_blink_cursor_ = true;
     const auto cursor_after = CalcCursorPos();
 
     // 文字列を書き込んだ行全体を再描画している。
@@ -756,7 +765,7 @@ void TaskTerminalDisplay(uint64_t task_id, int64_t data) {
         switch (msg->type) {
         case Message::kTimerTimeout:
             add_blink_timer(msg->arg.timer.timeout);
-            if (window_isactive) {
+            if (window_isactive && terminal->GetCanBlinkCursor()) {
                 const auto area = terminal->BlinkCursor();
                 Message msg = MakeLayerMessage(
                     terminal->UnderlyingTask().ID(), terminal->LayerID(),
