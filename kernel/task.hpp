@@ -102,6 +102,7 @@ public:
     Error SendMessage(uint64_t id, const Message &msg);
     Task &CurrentTask();
     void Finish(int exit_code);
+    void FinishOtherTask(uint64_t task_id, int exit_code);
     WithError<int> WaitFinish(uint64_t task_id);
 
 private:

@@ -804,8 +804,11 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
     }
 
+    uint64_t displayTaskId;
     if (show_window) {
-        task_manager->NewTask()
+        Task& displayTask = task_manager->NewTask();
+        displayTaskId = displayTask.ID();
+        displayTask
             .InitContext(TaskTerminalDisplay, reinterpret_cast<int64_t>(terminal))
             .Wakeup();
     }
@@ -834,6 +837,15 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
                     __asm__("sti");
                 }
             }
+            break;
+        case Message::kWindowClose:
+            CloseLayer(msg->arg.window_close.layer_id);
+
+            __asm__("cli");
+            if (show_window) {
+                task_manager->FinishOtherTask(displayTaskId, 0);
+            }
+            task_manager->Finish(terminal->LastExitCode());
             break;
         default:
             break;

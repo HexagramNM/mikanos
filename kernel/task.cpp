@@ -260,6 +260,24 @@ void TaskManager::Finish(int exit_code) {
     RestoreContext(&CurrentTask().Context());
 }
 
+void TaskManager::FinishOtherTask(uint64_t task_id, int exit_code) {
+    if (task_id == CurrentTask().ID()) {
+        Finish(exit_code);
+        return;
+    }
+
+    auto it = std::find_if(tasks_.begin(), tasks_.end(),
+        [task_id](const auto& t){ return t.get()->ID() == task_id; });
+    tasks_.erase(it);
+
+    finish_tasks_[task_id] = exit_code;
+    if (auto it = finish_waiter_.find(task_id); it != finish_waiter_.end()) {
+        auto waiter = it->second;
+        finish_waiter_.erase(it);
+        Wakeup(waiter);
+    }
+}
+
 WithError<int> TaskManager::WaitFinish(uint64_t task_id) {
     int exit_code;
     Task* current_task = &CurrentTask();
