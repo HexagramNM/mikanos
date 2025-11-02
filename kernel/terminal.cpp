@@ -604,7 +604,7 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
         return {0, argc.error};
     }
 
-    const int stack_size = 8 * 4096;
+    const int stack_size = 16 * 4096;
     LinearAddress4Level stack_frame_addr{0xffff'ffff'ffff'f000 - stack_size};
     if (auto err = SetupPageMaps(stack_frame_addr, stack_size / 4096)) {
         return {0, err};
@@ -850,11 +850,13 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         case Message::kWindowClose:
             CloseLayer(msg->arg.window_close.layer_id);
 
-            __asm__("cli");
-            if (show_window) {
-                task_manager->FinishOtherTask(displayTaskId, 0);
+            if (terminal->LayerID() == msg->arg.window_close.layer_id) {
+                __asm__("cli");
+                if (show_window) {
+                    task_manager->FinishOtherTask(displayTaskId, 0);
+                }
+                task_manager->Finish(terminal->LastExitCode());
             }
-            task_manager->Finish(terminal->LastExitCode());
             break;
         default:
             break;
